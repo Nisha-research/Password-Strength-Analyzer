@@ -32,4 +32,4 @@ Because this tool is entirely client-side, you don't need Node.js, npm, or a ser
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/YOUR-USERNAME/password-security-playground.git](https://github.com/YOUR-USERNAME/password-security-playground.git)
+   git clone https://github.com/Nisha-research/Password-Strength-Analyzer.git
