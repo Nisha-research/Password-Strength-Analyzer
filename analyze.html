@@ -312,7 +312,7 @@
         }
 
         .table-scroll {
-            overflow-x: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             border-radius: 12px;
             width: 100%;
@@ -327,7 +327,7 @@
 
         .db-table {
             width: 100%;
-            min-width: 520px;
+            table-layout: fixed;
             border-collapse: collapse;
             margin-top: 6px;
         }
@@ -339,6 +339,11 @@
             border-bottom: 1px solid #334155;
             font-size: 0.74rem;
             vertical-align: top;
+        }
+
+        .db-table td {
+            overflow-wrap: anywhere;
+            word-break: break-all;
         }
 
         .db-table th {
@@ -495,9 +500,6 @@
                 margin-left: 0;
             }
 
-            .db-table {
-                min-width: 360px;
-            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -516,6 +518,7 @@
     <div class="glass-card" id="main-card">
         <h2>Password Analyzer</h2>
         <p class="subtitle">Enter a password to see how an attacker—and a defender—views it.</p>
+        <p class="helper-note">Test your existing passwords for vulnerabilities, or use the generator to create a cryptographically secure passphrase based on modern NIST guidelines.</p>
         
         <button class="btn-suggest" id="btn-suggest" type="button" aria-label="Generate a strong sample passphrase">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
@@ -739,23 +742,24 @@
         // 1. Analyze
         const result = zxcvbn(val);
         const score = result.score;
+        const effectiveScore = result.feedback.warning ? Math.min(score, 2) : score;
         const crackSeconds = result.crack_times_seconds.offline_fast_hashing_1e10_per_second;
 
         // Visual Meter Updates
         segments.forEach((seg, index) => {
-            seg.style.backgroundColor = index <= score ? colors[score] : '#e2e8f0';
+            seg.style.backgroundColor = index <= effectiveScore ? colors[effectiveScore] : '#e2e8f0';
         });
 
-        strengthText.textContent = strengthLabels[score];
-        strengthText.style.color = colors[score];
+        strengthText.textContent = strengthLabels[effectiveScore];
+        strengthText.style.color = colors[effectiveScore];
         
-        crackTime.textContent = score > 0 ? `Est. Crack Time: ${result.crack_times_display.offline_fast_hashing_1e10_per_second}` : '';
-        crackContext.textContent = score > 0 ? getCrackContext(crackSeconds) : '';
+        crackTime.textContent = effectiveScore > 0 ? `Est. Crack Time: ${result.crack_times_display.offline_fast_hashing_1e10_per_second}` : '';
+        crackContext.textContent = effectiveScore > 0 ? getCrackContext(crackSeconds) : '';
 
         // 2. The "Why?" Feedback Logic
-        feedbackBox.style.borderLeftColor = colors[score];
+        feedbackBox.style.borderLeftColor = colors[effectiveScore];
         
-        if (score === 4) {
+        if (effectiveScore === 4) {
             feedbackTitle.textContent = 'Why is this strong?';
             feedbackTitle.style.color = colors[4];
             feedbackText.textContent = val.length >= 15 
@@ -768,19 +772,19 @@
             }
         } else if (result.feedback.warning) {
             feedbackTitle.textContent = 'Vulnerability Detected';
-            feedbackTitle.style.color = colors[score];
+            feedbackTitle.style.color = colors[effectiveScore];
             feedbackText.textContent = result.feedback.warning + ". " + (result.feedback.suggestions[0] || "");
         } else if (result.feedback.suggestions.length > 0) {
             feedbackTitle.textContent = 'How to improve';
-            feedbackTitle.style.color = colors[score];
+            feedbackTitle.style.color = colors[effectiveScore];
             feedbackText.textContent = result.feedback.suggestions[0];
         } else {
             feedbackTitle.textContent = 'Too Short';
-            feedbackTitle.style.color = colors[score];
+            feedbackTitle.style.color = colors[effectiveScore];
             feedbackText.textContent = "Simply adding more characters (even spaces!) is the fastest way to increase security.";
         }
 
-        lastScore = score;
+        lastScore = effectiveScore;
 
         // 3. Educational Visualizer
         vizInput.textContent = val;
