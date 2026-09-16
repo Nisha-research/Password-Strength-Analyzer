@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Password Security Playground</title>
+    <!-- Zxcvbn for intelligent password logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+    <!-- Canvas Confetti for the reward effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #1e293b;
+            --text-muted: #475569;
+            
+            /* Dynamic Colors */
+            --color-0: #ef4444; /* Red */
+            --color-1: #f97316; /* Orange */
+            --color-2: #eab308; /* Yellow */
+            --color-3: #22c55e; /* Green */
+            --color-4: #10b981; /* Emerald */
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #1e1b4b, #312e81, #1e3a8a, #0f172a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
+            color: var(--text-main);
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 35px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        h2 { margin: 0 0 10px 0; font-size: 26px; font-weight: 700; color: #0f172a; }
+        p.subtitle { margin: 0 0 24px 0; color: var(--text-muted); font-size: 14px; }
+
+        /* Shake Animation for reused/bad passwords */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px) rotate(-1deg); }
+            75% { transform: translateX(8px) rotate(1deg); }
+        }
+        .shake-error { animation: shake 0.4s ease-in-out; }
+
+        /* Inputs */
+        .input-wrapper { position: relative; margin-bottom: 20px; }
+        input {
+            width: 100%;
+            padding: 16px 48px 16px 16px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: 'Fira Code', monospace;
+            background: #ffffff;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            color: #0f172a;
+        }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+        
+        .toggle-btn {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+        }
+
+        .btn-suggest {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-suggest:hover { background: var(--primary-hover); }
+        .btn-suggest:active { transform: scale(0.98); }
+
+        /* Segmented Meter */
+        .meter-container { display: flex; gap: 8px; margin-bottom: 12px; }
+        .meter-segment {
+            height: 8px; flex-grow: 1; background: #e2e8f0;
+            border-radius: 4px; transition: background-color 0.4s ease;
+        }
+
+        .status-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 12px;
+        }
+        
+        /* The "Why" Feedback Box */
+        .feedback-box {
+            background: #f1f5f9;
+            border-left: 4px solid #cbd5e1;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #334155;
+            min-height: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .feedback-title { font-weight: 700; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        /* Code/Database Visualizer Section */
+        .viz-box {
+            background: #1e293b; color: #f8fafc;
+            border-radius: 12px; padding: 16px; margin-bottom: 16px;
+            font-family: 'Fira Code', monospace; font-size: 13px;
+        }
+        
+        .viz-label {
+            font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600;
+            color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .highlight-code { color: #38bdf8; word-break: break-all; }
+        .salt-code { color: #a78bfa; }
+        .pepper-code { color: #fb923c; }
+        .hash-code { color: #34d399; word-break: break-all; }
+
+        .viz-step { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .explainer-tag {
+            font-family: 'Poppins', sans-serif; font-size: 10px; padding: 2px 6px;
+            border-radius: 4px; background: rgba(255,255,255,0.1); margin-left: auto;
+        }
+
+        .db-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .db-table th, .db-table td { text-align: left; padding: 8px; border-bottom: 1px solid #334155; font-size: 12px; }
+        .db-table th { color: #94a3b8; }
+        
+        .alert-badge {
+            background: #ef4444; color: white; padding: 6px 12px;
+            border-radius: 6px; font-size: 12px; font-family: 'Poppins', sans-serif;
+            font-weight: bold; margin-top: 12px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- TOOL CARD -->
+    <div class="glass-card" id="main-card">
+        <h2>Intelligent Analyzer</h2>
+        <p class="subtitle">Enter a password to see how an attacker—and a defender—views it.</p>
+        
+        <button class="btn-suggest" id="btn-suggest">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+            Generate "Uncrackable" Passphrase
+        </button>
+
+        <div class="input-wrapper">
+            <input type="password" id="password" placeholder="Type a password..." autocomplete="off">
+            <button type="button" class="toggle-btn" id="toggle-btn">
+                <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+        </div>
+
+        <div class="meter-container">
+            <div class="meter-segment" id="seg-1"></div>
+            <div class="meter-segment" id="seg-2"></div>
+            <div class="meter-segment" id="seg-3"></div>
+            <div class="meter-segment" id="seg-4"></div>
+        </div>
+
+        <div class="status-header">
+            <div style="display: flex; flex-direction: column;">
+                <span id="strength-text" style="font-size: 18px; font-weight: 700; color: var(--text-muted);">Awaiting Input</span>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column;">
+                <span id="crack-time" style="font-weight: 700; font-size: 14px; color: var(--text-main);"></span>
+                <span id="crack-context" style="font-size: 11px; color: var(--text-muted);"></span>
+            </div>
+        </div>
+
+        <!-- Dynamic Feedback Box -->
+        <div class="feedback-box" id="feedback-box">
+            <div class="feedback-title" id="feedback-title">Analysis</div>
+            <div id="feedback-text">Start typing to evaluate your password's structural integrity.</div>
+        </div>
+    </div>
+
+    <!-- EDUCATIONAL CARD -->
+    <div class="glass-card">
+        <h2>The Defender's Architecture</h2>
+        <p class="subtitle">This is how modern servers secure your data behind the scenes.</p>
+
+        <!-- Step 1: Salting & Peppering -->
+        <div class="viz-box">
+            <div class="viz-label">Cryptographic Pipeline</div>
+            
+            <div class="viz-step">
+                <span style="color:#94a3b8;">1. Input:</span> 
+                <span class="highlight-code" id="viz-input">...</span>
+            </div>
+            
+            <div class="viz-step">
+                <span style="color:#94a3b8;">2. + Salt:</span> 
+                <span class="salt-code" id="viz-salt">[waiting]</span>
+                <span class="explainer-tag">Unique per user (Saved in DB)</span>
+            </div>
+
+            <div class="viz-step">
+                <span style="color:#94a3b8;">3. + Pepper:</span> 
+                <span class="pepper-code">GLOBAL_APP_SECRET_99!</span>
+                <span class="explainer-tag">Hidden on Server (NOT in DB)</span>
+            </div>
+
+            <div class="viz-step" style="border-top: 1px dashed #334155; padding-top: 12px;">
+                <span style="color:#94a3b8;">= Hash:</span> 
+                <span class="hash-code" id="viz-hash">$2b$12$...</span>
+            </div>
+            
+            <div style="font-family: 'Poppins', sans-serif; font-size: 11px; color: #cbd5e1; margin-top: 10px;">
+                * If hackers steal the Database, they get the Hashes and Salts. But without the Server's <b>Pepper</b>, they cannot crack the passwords!
+            </div>
+        </div>
+
+        <!-- Step 2: Database Storage & Reuse Check -->
+        <div class="viz-box">
+            <div class="viz-label">Database History (Reuse Prevention)</div>
+            <table class="db-table">
+                <thead>
+                    <tr><th>Date Used</th><th>Stored DB Hash (Salt + Password + Pepper)</th></tr>
+                </thead>
+                <tbody id="db-history"></tbody>
+            </table>
+            <div id="reuse-alert" style="display: none;">
+                <div class="alert-badge">⚠️ BLOCKED: This hash matches an old password you used before!</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- State & Elements ---
+    const passwordInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const btnSuggest = document.getElementById('btn-suggest');
+    const mainCard = document.getElementById('main-card');
+    
+    const segments = [document.getElementById('seg-1'), document.getElementById('seg-2'), document.getElementById('seg-3'), document.getElementById('seg-4')];
+    const strengthText = document.getElementById('strength-text');
+    const crackTime = document.getElementById('crack-time');
+    const crackContext = document.getElementById('crack-context');
+    
+    const feedbackBox = document.getElementById('feedback-box');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackText = document.getElementById('feedback-text');
+
+    const vizInput = document.getElementById('viz-input');
+    const vizSalt = document.getElementById('viz-salt');
+    const vizHash = document.getElementById('viz-hash');
+    const reuseAlert = document.getElementById('reuse-alert');
+    const dbHistoryTable = document.getElementById('db-history');
+
+    const strengthLabels = ["Critically Weak", "Weak", "Moderate", "Strong", "Uncrackable"];
+    const colors = ["var(--color-0)", "var(--color-1)", "var(--color-2)", "var(--color-3)", "var(--color-4)"];
+    
+    let lastScore = -1; // To track when to trigger confetti
+
+    // --- Mock Database ---
+    const mockUserHistory = {
+        "password123": "$2b$12$L8m...abc123[PEPPERED]",
+        "qwerty": "$2b$12$X9p...xyz789[PEPPERED]"
+    };
+
+    function renderDB() {
+        let html = `<tr><td>Oct 2022</td><td style="color: #64748b;">${mockUserHistory["password123"]}</td></tr>
+                    <tr><td>Mar 2023</td><td style="color: #64748b;">${mockUserHistory["qwerty"]}</td></tr>`;
+        dbHistoryTable.innerHTML = html;
+    }
+    renderDB();
+
+    function generateMockSalt() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let salt = '';
+        for (let i = 0; i < 16; i++) { salt += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return salt;
+    }
+
+    // Contextual fun facts for crack times
+    function getCrackContext(seconds) {
+        if (seconds < 1) return "Faster than you can blink.";
+        if (seconds < 60) return "Cracked before you finish a coffee.";
+        if (seconds < 86400) return "Cracked in under a day.";
+        if (seconds < 31536000) return "Cracked within a year.";
+        if (seconds < 3153600000) return "Cracked in a lifetime.";
+        return "Longer than the universe has existed.";
+    }
+
+    // Toggle Visibility
+    toggleBtn.addEventListener('click', () => {
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    });
+
+    // Generate Passphrase
+    const words = ["quantum", "river", "sunset", "velvet", "acoustic", "breeze", "crystal", "forest", "galaxy", "mango", "rocket", "silver", "thunder", "window", "yellow", "zebra"];
+    btnSuggest.addEventListener('click', () => {
+        let phrase = Array.from({length: 4}, () => words[Math.floor(Math.random() * words.length)]).join('-');
+        passwordInput.type = 'text'; 
+        passwordInput.value = phrase;
+        passwordInput.dispatchEvent(new Event('input'));
+    });
+
+    // Main Input Listener
+    passwordInput.addEventListener('input', () => {
+        const val = passwordInput.value;
+        
+        // Reset state
+        if (!val) {
+            segments.forEach(s => s.style.backgroundColor = '#e2e8f0');
+            strengthText.textContent = 'Awaiting Input';
+            strengthText.style.color = 'var(--text-muted)';
+            crackTime.textContent = ''; crackContext.textContent = '';
+            feedbackBox.style.borderLeftColor = '#cbd5e1';
+            feedbackTitle.textContent = 'Analysis';
+            feedbackText.textContent = 'Start typing to evaluate your password\'s structural integrity.';
+            vizInput.textContent = '...'; vizSalt.textContent = '[waiting]'; vizHash.textContent = '...';
+            reuseAlert.style.display = 'none';
+            lastScore = -1;
+            return;
+        }
+
+        // 1. Analyze
+        const result = zxcvbn(val);
+        const score = result.score;
+        const crackSeconds = result.crack_times_seconds.offline_fast_hashing_1e10_per_second;
+
+        // Visual Meter Updates
+        segments.forEach((seg, index) => {
+            seg.style.backgroundColor = index <= score ? colors[score] : '#e2e8f0';
+        });
+
+        strengthText.textContent = strengthLabels[score];
+        strengthText.style.color = colors[score];
+        
+        crackTime.textContent = score > 0 ? `Est. Crack Time: ${result.crack_times_display.offline_fast_hashing_1e10_per_second}` : '';
+        crackContext.textContent = score > 0 ? getCrackContext(crackSeconds) : '';
+
+        // 2. The "Why?" Feedback Logic
+        feedbackBox.style.borderLeftColor = colors[score];
+        
+        if (score === 4) {
+            feedbackTitle.textContent = 'Why is this strong?';
+            feedbackTitle.style.color = colors[4];
+            feedbackText.textContent = val.length >= 15 
+                ? "Excellent. Its length makes it mathematically near-impossible to brute force." 
+                : "Great entropy! It has no predictable dictionary patterns.";
+            
+            // Trigger Confetti!
+            if (lastScore < 4) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+            }
+        } else if (result.feedback.warning) {
+            feedbackTitle.textContent = 'Vulnerability Detected';
+            feedbackTitle.style.color = colors[score];
+            feedbackText.textContent = result.feedback.warning + ". " + (result.feedback.suggestions[0] || "");
+        } else if (result.feedback.suggestions.length > 0) {
+            feedbackTitle.textContent = 'How to improve';
+            feedbackTitle.style.color = colors[score];
+            feedbackText.textContent = result.feedback.suggestions[0];
+        } else {
+            feedbackTitle.textContent = 'Too Short';
+            feedbackTitle.style.color = colors[score];
+            feedbackText.textContent = "Simply adding more characters (even spaces!) is the fastest way to increase security.";
+        }
+
+        lastScore = score;
+
+        // 3. Educational Visualizer
+        vizInput.textContent = val;
+        
+        if (mockUserHistory[val.toLowerCase()]) {
+            // Reused Password Route
+            vizSalt.textContent = "[Matches DB Salt]";
+            vizHash.textContent = mockUserHistory[val.toLowerCase()];
+            reuseAlert.style.display = 'block';
+            
+            // Shake effect & force red text
+            mainCard.classList.remove('shake-error');
+            void mainCard.offsetWidth; // trigger reflow
+            mainCard.classList.add('shake-error');
+            
+            strengthText.textContent = "Reused Password";
+            strengthText.style.color = colors[0];
+            segments.forEach(s => s.style.backgroundColor = colors[0]);
+            
+            feedbackTitle.textContent = "CRITICAL ERROR";
+            feedbackTitle.style.color = colors[0];
+            feedbackText.textContent = "Never reuse passwords. If one site gets hacked, all your other accounts are compromised.";
+            feedbackBox.style.borderLeftColor = colors[0];
+
+        } else {
+            // New Password Route
+            reuseAlert.style.display = 'none';
+            const fakeSalt = generateMockSalt();
+            vizSalt.textContent = fakeSalt;
+            // Visual representation of a combined hash
+            vizHash.textContent = `$2b$12$${fakeSalt}7x9Yp...[PEPPER_APPLIED]`; 
+        }
+    });
+</script>
+</body>
+</html>
