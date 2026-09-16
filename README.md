@@ -33,3 +33,38 @@ Because this tool is entirely client-side, you don't need Node.js, npm, or a ser
 1. Clone the repository:
    ```bash
    git clone https://github.com/Nisha-research/Password-Strength-Analyzer.git
+   cd Password-Strength-Analyzer
+   ```
+2. Open `/home/runner/work/Password-Strength-Analyzer/Password-Strength-Analyzer/analyze.html` directly in a modern browser.
+
+## 📱 Responsive Browser Notes
+
+- The UI is mobile-first and adapts for phones, tablets, laptops, and wide desktop screens.
+- On narrow devices, content stacks vertically and the mock database table scrolls horizontally inside its card.
+- For best results, use an up-to-date Chromium, Firefox, or Safari browser.
+
+## ☁️ Streamlit Community Cloud Deployment
+
+This repository includes a Streamlit wrapper so the same HTML app can be hosted on Streamlit Community Cloud.
+
+1. Push your code to GitHub.
+2. In Streamlit Community Cloud, choose:
+   - **Repository:** `Nisha-research/Password-Strength-Analyzer`
+   - **Branch:** `main`
+   - **Main file path:** `app.py`
+3. Deploy.
+
+Local Streamlit run:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## 🔒 Demo Security Note
+
+- Pepper values shown in the educational visualizer are illustrative placeholders only.
+- Real application peppers are secrets and must remain server-side (not in browser code and not in source control).
+- This project does not send passwords to a server; all analysis runs in-browser.
