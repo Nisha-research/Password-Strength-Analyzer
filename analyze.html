@@ -31,7 +31,12 @@
             --color-4: #10b981;
         }
 
-        * { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            max-width: 100%;
+        }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -40,9 +45,8 @@
             animation: gradientBG 18s ease infinite;
             min-height: 100svh;
             margin: 0;
-            padding: clamp(16px, 2vw, 32px);
+            padding: 0;
             color: var(--text-main);
-            overflow-x: hidden;
         }
 
         @keyframes gradientBG {
@@ -55,10 +59,16 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: clamp(16px, 2vw, 28px);
-            width: min(100%, 1150px);
+            width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
+            padding-top: clamp(16px, 2vw, 32px);
+            padding-bottom: clamp(16px, 2vw, 32px);
+            padding-left: max(clamp(12px, 2vw, 24px), env(safe-area-inset-left));
+            padding-right: max(clamp(12px, 2vw, 24px), env(safe-area-inset-right));
             position: relative;
             z-index: 10;
+            min-width: 0;
         }
 
         .glass-card {
@@ -70,6 +80,9 @@
             border-radius: 24px;
             box-shadow: 0 25px 55px -25px rgba(15, 23, 42, 0.75);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
         }
 
         .glass-card:hover {
@@ -204,6 +217,16 @@
             margin-bottom: 12px;
         }
 
+        .status-header > div {
+            min-width: 0;
+            flex: 1 1 220px;
+        }
+
+        .status-header span {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
         .feedback-box {
             background: linear-gradient(135deg, #f8fafc 0%, #eef4ff 100%);
             border-left: 4px solid #cbd5e1;
@@ -258,6 +281,13 @@
             flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 10px;
+            min-width: 0;
+        }
+
+        .viz-step span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .explainer-tag {
@@ -267,7 +297,10 @@
             border-radius: 999px;
             background: rgba(148, 163, 184, 0.22);
             margin-left: auto;
-            white-space: nowrap;
+            white-space: normal;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .helper-note {
@@ -282,6 +315,9 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             border-radius: 12px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
         }
 
         .table-scroll:focus-visible {
@@ -356,6 +392,11 @@
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 16px;
             padding: 14px 16px;
+            min-width: 0;
+        }
+
+        .info-item > div:last-child {
+            min-width: 0;
         }
 
         .info-icon {
@@ -374,6 +415,8 @@
             margin: 0 0 4px 0;
             font-size: 1rem;
             color: #0f172a;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .info-item p {
@@ -381,6 +424,8 @@
             color: var(--text-muted);
             line-height: 1.6;
             font-size: 0.88rem;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .attack-list {
@@ -391,7 +436,7 @@
 
         .attack-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
             color: #1e293b;
             font-size: 0.9rem;
@@ -399,6 +444,9 @@
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
             padding: 10px 12px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .attack-dot {
@@ -419,10 +467,15 @@
             border-top: 1px solid rgba(148, 163, 184, 0.25);
         }
 
-        @media (min-width: 900px) {
+        @media (min-width: 768px) {
             .container {
-                grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 align-items: start;
+            }
+
+            .container > .info-card {
+                grid-column: 1 / -1;
+                justify-self: center;
             }
 
             .info-grid {
@@ -431,11 +484,6 @@
         }
 
         @media (max-width: 540px) {
-            body {
-                padding-left: max(12px, env(safe-area-inset-left));
-                padding-right: max(12px, env(safe-area-inset-right));
-            }
-
             .glass-card { border-radius: 16px; }
 
             .status-header {
@@ -448,7 +496,7 @@
             }
 
             .db-table {
-                min-width: 420px;
+                min-width: 360px;
             }
         }
 
