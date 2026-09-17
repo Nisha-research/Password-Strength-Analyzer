@@ -14,5 +14,9 @@ if not html_path.exists():
 
 html = html_path.read_text(encoding="utf-8")
 
-# Render the page inside Streamlit with a roomy viewport so content isn't clipped on larger/smaller displays.
-components.html(html, height=1500, scrolling=True)
+# height is just an initial fallback before analyze.html's own resize script runs
+# (see the "Streamlit iframe auto-height" block at the bottom of analyze.html's <script>).
+# scrolling=False so the page grows/shrinks with real content instead of showing a
+# fixed-height box with its own internal scrollbar - that nested-scrollbar look is what
+# was causing the cramped mobile view.
+components.html(html, height=1000, scrolling=False)
