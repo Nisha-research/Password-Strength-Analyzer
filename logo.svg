@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Left Shield (Vulnerability / Weakness) -->
+  <path d="M32 4 L6 12 L6 34 C6 48 16 58 32 62 Z" fill="#ef4444" />
+  
+  <!-- Right Shield (Security / Strength) -->
+  <path d="M32 4 L58 12 L58 34 C58 48 48 58 32 62 Z" fill="#10b981" />
+
+  <!-- Sword Blade -->
+  <path d="M32 10 L37 18 L35 42 L29 42 L27 18 Z" fill="#f8fafc" />
+  <!-- Blade Shadow (gives it a 3D metallic look) -->
+  <path d="M32 10 L37 18 L35 42 L32 42 Z" fill="#cbd5e1" /> 
+
+  <!-- Sword Guard -->
+  <rect x="20" y="42" width="24" height="4" rx="2" fill="#1e293b" />
+
+  <!-- Sword Handle -->
+  <rect x="29" y="46" width="6" height="10" fill="#475569" />
+
+  <!-- Sword Pommel -->
+  <circle cx="32" cy="58" r="4" fill="#1e293b" />
+</svg>
