@@ -2,6 +2,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 from pathlib import Path
 
+st.set_page_config(
+    page_title="Password Analyzer",
+    page_icon="logo.svg", # This tells Streamlit to use your SVG file
+    layout="wide"
+)
 st.set_page_config(page_title="Password Strength Analyzer", layout="wide")
 st.title("Password Strength Analyzer")
 st.caption("Responsive browser demo: all analysis runs client-side in your browser.")
