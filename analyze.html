@@ -327,6 +327,61 @@
             color: #cbd5e1;
         }
 
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .brand-row h2 { margin: 0; }
+
+        .logo-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, rgba(91, 124, 255, 0.14), rgba(124, 58, 237, 0.14));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .gen-toggle {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 10px;
+        }
+
+        .gen-toggle-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 8px 6px;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }
+
+        .gen-toggle-btn.active {
+            background: #ffffff;
+            color: var(--primary-hover);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+
+        .gen-toggle-btn:focus-visible {
+            outline: none;
+            box-shadow: var(--focus-ring);
+        }
+
         .table-scroll {
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
@@ -532,13 +587,33 @@
 <div class="container">
     <!-- TOOL CARD -->
     <div class="glass-card" id="main-card">
-        <h2>Password Analyzer</h2>
+        <div class="brand-row">
+            <div class="logo-badge" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z" fill="url(#logoGrad)"/>
+                    <circle cx="12" cy="10.5" r="2.1" fill="white"/>
+                    <rect x="11" y="12" width="2" height="4.2" rx="1" fill="white"/>
+                    <defs>
+                        <linearGradient id="logoGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#5b7cff"/>
+                            <stop offset="1" stop-color="#7c3aed"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h2>Password Analyzer</h2>
+        </div>
         <p class="subtitle">Enter a password to see how an attacker—and a defender—views it.</p>
-        <p class="helper-note">Test your existing passwords for vulnerabilities, or use the generator to create a cryptographically secure passphrase based on modern NIST guidelines.</p>
-        
+        <p class="helper-note">Test your existing passwords for vulnerabilities, or use the generator below to create a cryptographically secure password or passphrase.</p>
+
+        <div class="gen-toggle" role="group" aria-label="Password generator mode">
+            <button type="button" class="gen-toggle-btn active" id="mode-random" data-mode="random">Random Password</button>
+            <button type="button" class="gen-toggle-btn" id="mode-passphrase" data-mode="passphrase">Passphrase</button>
+        </div>
+
         <button class="btn-suggest" id="btn-suggest" type="button" aria-label="Generate a strong sample password">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
-            Generate Strong Passphrase
+            <span id="btn-suggest-label">Generate Strong Password</span>
         </button>
 
         <div class="input-wrapper">
@@ -729,14 +804,143 @@
         toggleBtn.setAttribute('aria-label', isHidden ? 'Hide password text' : 'Show password text');
     });
 
-    // Generate Passphrase
-    const words = ["quantum", "river", "sunset", "velvet", "acoustic", "breeze", "crystal", "forest", "galaxy", "mango", "rocket", "silver", "thunder", "window", "yellow", "zebra"];
+    // --- Secure random source (crypto.getRandomValues, not Math.random - matters for
+    // anything claiming to generate "cryptographically secure" output) ---
+    function secureRandomInt(maxExclusive) {
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        return arr[0] % maxExclusive;
+    }
+
+    // --- Generator: Random Password (Chrome/Firefox-style) ---
+    // Guarantees at least one char from each class, then fills and shuffles - the same
+    // approach browser-built-in generators use, rather than a pure per-character random pick
+    // which can occasionally omit a whole character class.
+    const GEN_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ';   // no I/O - avoids visual ambiguity
+    const GEN_LOWER = 'abcdefghijkmnopqrstuvwxyz';  // no l
+    const GEN_DIGITS = '23456789';                   // no 0/1
+    const GEN_SYMBOLS = '!@#$%^&*-_=+?';
+    const GEN_ALL = GEN_UPPER + GEN_LOWER + GEN_DIGITS + GEN_SYMBOLS;
+
+    function generateRandomPassword(length = 16) {
+        let chars = [
+            GEN_UPPER[secureRandomInt(GEN_UPPER.length)],
+            GEN_LOWER[secureRandomInt(GEN_LOWER.length)],
+            GEN_DIGITS[secureRandomInt(GEN_DIGITS.length)],
+            GEN_SYMBOLS[secureRandomInt(GEN_SYMBOLS.length)],
+        ];
+        for (let i = chars.length; i < length; i++) {
+            chars.push(GEN_ALL[secureRandomInt(GEN_ALL.length)]);
+        }
+        // Fisher-Yates shuffle so the guaranteed chars aren't always in positions 0-3
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = secureRandomInt(i + 1);
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        return chars.join('');
+    }
+
+    // --- Generator: Passphrase ---
+    // 5 random words (not 4) to land closer to NIST/Diceware-recommended entropy for
+    // dictionary-word passphrases (~64+ bits) - two or three words alone is not enough.
+    const words = ["quantum", "river", "sunset", "velvet", "acoustic", "breeze", "crystal", "forest", "galaxy", "mango", "rocket", "silver", "thunder", "window", "yellow", "zebra", "orbit", "cobalt", "maple", "ember", "glacier", "falcon", "prairie", "lunar", "cinder", "harbor", "willow", "canyon", "meadow", "tundra"];
+    function generatePassphrase(count = 5) {
+        return Array.from({length: count}, () => words[secureRandomInt(words.length)]).join('-');
+    }
+
+    // --- Generator mode toggle ---
+    let genMode = 'random';
+    const genToggleBtns = document.querySelectorAll('.gen-toggle-btn');
+    const btnSuggestLabel = document.getElementById('btn-suggest-label');
+    genToggleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            genToggleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            genMode = btn.dataset.mode;
+            btnSuggestLabel.textContent = genMode === 'random' ? 'Generate Strong Password' : 'Generate Passphrase';
+            btnSuggest.setAttribute('aria-label', genMode === 'random' ? 'Generate a strong random password' : 'Generate a strong passphrase');
+        });
+    });
+
     btnSuggest.addEventListener('click', () => {
-        let phrase = Array.from({length: 4}, () => words[Math.floor(Math.random() * words.length)]).join('-');
+        const value = genMode === 'random' ? generateRandomPassword(16) : generatePassphrase(5);
         passwordInput.type = 'text'; 
-        passwordInput.value = phrase;
+        passwordInput.value = value;
         passwordInput.dispatchEvent(new Event('input'));
     });
+
+    // --- Realistic-risk layer on top of zxcvbn ---
+    // zxcvbn is a solid entropy estimator, but real-world cracking tools (hashcat, John the
+    // Ripper) don't brute-force character-by-character - they run targeted wordlists and
+    // rule sets that try "CommonWord + digits/symbols" and "word+word" combos FIRST, because
+    // that's how most real passwords are built. zxcvbn can under-penalize these templated
+    // shapes, especially for words its bundled dictionaries don't rank as common. This layer
+    // inspects zxcvbn's own match breakdown (result.sequence) to catch that gap.
+    const COMMON_BASES = new Set([
+        "password","admin","welcome","qwerty","letmein","dragon","monkey","football","master",
+        "login","root","guest","test","changeme","iloveyou","sunshine","princess","trustno1",
+        "ninja","shadow","superman","batman","starwars","freedom","whatever","killer","hunter",
+        "access","flower","hockey","baseball","soccer","summer","winter","spring","autumn",
+        "computer","internet","google","facebook","company","michael","jennifer","jordan",
+        "ranger","cookie","chocolate","default","secret","passwd","abcdef","charlie","donald",
+        "andrew","joshua","hannah","matthew","daniel","robert","thomas"
+    ]);
+
+    function normalizeCore(word) {
+        return word.toLowerCase()
+            .replace(/@/g, 'a').replace(/4/g, 'a')
+            .replace(/3/g, 'e')
+            .replace(/[1!|]/g, 'i')
+            .replace(/0/g, 'o')
+            .replace(/[$5]/g, 's')
+            .replace(/7/g, 't');
+    }
+
+    function assessRealisticRisk(password, result) {
+        const seq = result.sequence || [];
+        let cheapLen = 0;
+        const substantiveMatches = [];
+
+        seq.forEach(m => {
+            if (m.pattern === 'repeat' || m.pattern === 'sequence' || m.pattern === 'date') {
+                cheapLen += m.token.length; // trivially guessable filler - cracking tools try these first
+            } else {
+                substantiveMatches.push(m);
+            }
+        });
+
+        const cheapRatio = password.length ? cheapLen / password.length : 0;
+
+        // Does the whole password reduce to a well-known base word plus junk?
+        const lettersOnly = password.replace(/[^a-zA-Z]/g, '');
+        const normalized = normalizeCore(lettersOnly);
+        const isKnownBase = lettersOnly.length > 0 &&
+            (COMMON_BASES.has(normalized) || COMMON_BASES.has(lettersOnly.toLowerCase()));
+
+        // Filler-heavy: most of the password is predictable filler around one real segment -
+        // exactly the shape "word+####" or "WORD****123" that rule-based attacks target.
+        const fillerHeavy = cheapRatio >= 0.25 && substantiveMatches.length <= 1 && password.length <= 18;
+
+        // Two short words joined by a single separator (e.g. "meow-cats") - this doesn't rely
+        // on zxcvbn's dictionary recognizing either word. Combinator attacks (hashcat/John)
+        // join two wordlists pairwise and try every combination; a huge wordlist (slang,
+        // names, gamer-tag style words) covers far more than "official" dictionary words, so
+        // this shape is weak regardless of whether zxcvbn's static wordlist happens to know
+        // the specific words used.
+        const isShortTwoWordPhrase = /^[a-zA-Z]{3,10}[-_.][a-zA-Z]{3,10}$/.test(password);
+
+        return { isKnownBase, fillerHeavy, isShortTwoWordPhrase };
+    }
+
+    // Contextual fun facts for crack times
+    function getCrackContext(seconds) {
+        if (seconds < 1) return "Faster than you can blink.";
+        if (seconds < 60) return "Cracked before you finish a coffee.";
+        if (seconds < 86400) return "Cracked in under a day.";
+        if (seconds < 31536000) return "Cracked within a year.";
+        if (seconds < 3153600000) return "Cracked in a lifetime.";
+        return "Longer than the universe has existed.";
+    }
 
     // Main Input Listener
     passwordInput.addEventListener('input', () => {
@@ -760,7 +964,21 @@
         // 1. Analyze
         const result = zxcvbn(val);
         const score = result.score;
-        const effectiveScore = result.feedback.warning ? Math.min(score, 2) : score;
+        const risk = assessRealisticRisk(val, result);
+
+        let effectiveScore = result.feedback.warning ? Math.min(score, 2) : score;
+        let overrideReason = null;
+        if (risk.isKnownBase) {
+            effectiveScore = Math.min(effectiveScore, 1);
+            overrideReason = 'known-base';
+        } else if (risk.isShortTwoWordPhrase) {
+            effectiveScore = Math.min(effectiveScore, 2);
+            overrideReason = 'short-phrase';
+        } else if (risk.fillerHeavy && effectiveScore >= 2) {
+            effectiveScore = Math.min(effectiveScore, 2);
+            overrideReason = 'filler';
+        }
+
         // Model the crack time against salted bcrypt-style hashing (slow, ~10k guesses/sec on
         // dedicated hardware) rather than the unsalted-fast-hash estimate, since that matches
         // the hashing scheme this app's own "Defender's Architecture" panel teaches.
@@ -773,15 +991,40 @@
 
         strengthText.textContent = strengthLabels[effectiveScore];
         strengthText.style.color = colors[effectiveScore];
-        
-        crackTime.textContent = effectiveScore > 0 ? `Est. Crack Time: ${result.crack_times_display.offline_slow_hashing_1e4_per_second}` : '';
-        crackContext.textContent = effectiveScore > 0 ? getCrackContext(crackSeconds) : '';
-        crackNote.textContent = effectiveScore > 0 ? 'Assumes salted bcrypt hashing, as shown below' : '';
+
+        if (overrideReason) {
+            // A raw brute-force estimate would understate the real risk here, so show a
+            // realistic targeted-attack estimate instead and say so explicitly.
+            let realisticLabel = 'Minutes to hours';
+            if (overrideReason === 'known-base') realisticLabel = 'Seconds to minutes';
+            else if (overrideReason === 'short-phrase') realisticLabel = 'Hours to a couple days';
+            crackTime.textContent = `Est. Crack Time: ${realisticLabel}`;
+            crackContext.textContent = overrideReason === 'short-phrase'
+                ? 'Using a combinator attack (two wordlists joined pairwise), not raw brute force.'
+                : 'Using a dictionary + rule-based attack, not raw brute force.';
+            crackNote.textContent = `Raw brute-force math says ${result.crack_times_display.offline_slow_hashing_1e4_per_second} — that overstates safety here.`;
+        } else {
+            crackTime.textContent = effectiveScore > 0 ? `Est. Crack Time: ${result.crack_times_display.offline_slow_hashing_1e4_per_second}` : '';
+            crackContext.textContent = effectiveScore > 0 ? getCrackContext(crackSeconds) : '';
+            crackNote.textContent = effectiveScore > 0 ? 'Assumes salted bcrypt hashing, as shown below' : '';
+        }
 
         // 2. The "Why?" Feedback Logic
         feedbackBox.style.borderLeftColor = colors[effectiveScore];
-        
-        if (effectiveScore === 4) {
+
+        if (overrideReason === 'known-base') {
+            feedbackTitle.textContent = 'Common Password Template';
+            feedbackTitle.style.color = colors[effectiveScore];
+            feedbackText.textContent = "This is a well-known word with digits or symbols tacked on. Cracking wordlists include this exact word, then automatically test it with common suffixes — character variety here doesn't add real protection.";
+        } else if (overrideReason === 'short-phrase') {
+            feedbackTitle.textContent = 'Passphrase Too Short';
+            feedbackTitle.style.color = colors[effectiveScore];
+            feedbackText.textContent = "Two words joined by a separator is exactly what combinator attacks (two wordlists tried pairwise) target first. NIST/Diceware-style guidance recommends 5-6 random, unrelated words for a passphrase to be genuinely safe.";
+        } else if (overrideReason === 'filler') {
+            feedbackTitle.textContent = 'Predictable Filler';
+            feedbackTitle.style.color = colors[effectiveScore];
+            feedbackText.textContent = "Most of this password is a repeated character or a sequential run (like 123 or ****) — attackers' rule sets try these fillers automatically. The real strength here comes from the smaller 'core' part alone.";
+        } else if (effectiveScore === 4) {
             feedbackTitle.textContent = 'Why is this strong?';
             feedbackTitle.style.color = colors[4];
             feedbackText.textContent = val.length >= 15 
@@ -790,7 +1033,7 @@
             
             // Trigger Confetti!
             if (lastScore < 4 && !prefersReducedMotion) {
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+                fireConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
             }
         } else if (result.feedback.warning) {
             feedbackTitle.textContent = 'Vulnerability Detected';
@@ -800,10 +1043,20 @@
             feedbackTitle.textContent = 'How to improve';
             feedbackTitle.style.color = colors[effectiveScore];
             feedbackText.textContent = result.feedback.suggestions[0];
-        } else {
+        } else if (val.length < 8) {
+            // zxcvbn had no specific complaint, but it's genuinely short
             feedbackTitle.textContent = 'Too Short';
             feedbackTitle.style.color = colors[effectiveScore];
             feedbackText.textContent = "Simply adding more characters (even spaces!) is the fastest way to increase security.";
+        } else if (effectiveScore >= 3) {
+            // Already Strong with nothing specific to flag - don't call it "too short"
+            feedbackTitle.textContent = 'Good, Could Be Stronger';
+            feedbackTitle.style.color = colors[effectiveScore];
+            feedbackText.textContent = "No obvious weak patterns here. A bit more length or an extra uncommon word would push this into 'Very Strong'.";
+        } else {
+            feedbackTitle.textContent = 'Fair, Not Great';
+            feedbackTitle.style.color = colors[effectiveScore];
+            feedbackText.textContent = "This isn't immediately guessable, but it's not using its length efficiently either — try a longer or less predictable phrase.";
         }
 
         lastScore = effectiveScore;
@@ -840,6 +1093,51 @@
             vizHash.textContent = `$2b$12$${fakeSalt}7x9Yp...[PEPPER_APPLIED]`; 
         }
     });
+
+    // --- Streamlit iframe auto-height ---
+    // components.html() embeds this page in a same-origin iframe. Without this, Streamlit
+    // gives the iframe a fixed height with its own internal scrollbar, which on mobile shows
+    // up as a cramped, nested-scrolling box. Resizing the iframe to match real content height
+    // lets the page scroll normally with the rest of the Streamlit app instead.
+    //
+    // The actual DOM write is deferred to requestAnimationFrame, decoupled from the
+    // ResizeObserver callback itself - writing synchronously inside the callback is what
+    // triggers the "ResizeObserver loop completed with undelivered notifications" warning on
+    // pages with animated layout (gradients, transitions), since the write can itself cause
+    // another resize within the same pass.
+    let resizeQueued = false;
+    function resizeParentFrame() {
+        if (resizeQueued) return;
+        resizeQueued = true;
+        requestAnimationFrame(() => {
+            resizeQueued = false;
+            try {
+                if (window.frameElement) {
+                    window.frameElement.style.height = document.documentElement.scrollHeight + 'px';
+                }
+            } catch (e) { /* cross-origin - ignore */ }
+        });
+    }
+    // Only bother watching for resizes at all if we're in a same-origin iframe to begin with
+    // (the Streamlit case). Standalone/artifact views have no frameElement to resize, so
+    // skipping this avoids running an observer - and any related warning - for no purpose.
+    if (window.frameElement) {
+        window.addEventListener('load', resizeParentFrame);
+        window.addEventListener('resize', resizeParentFrame);
+        if (window.ResizeObserver) {
+            new ResizeObserver(resizeParentFrame).observe(document.body);
+        }
+    }
+
+    // --- Confetti without the Worker attempt ---
+    // canvas-confetti tries to render via an OffscreenCanvas Worker for performance, using a
+    // blob: URL - some hosting origins (including sandboxed artifact previews) block
+    // constructing Workers from blob URLs, which throws the console warning seen in devtools.
+    // It's a harmless fallback either way (confetti still renders on the main thread), but
+    // explicitly disabling worker mode stops the attempt - and the warning - entirely.
+    const fireConfetti = (typeof confetti !== 'undefined' && confetti.create)
+        ? confetti.create(undefined, { resize: true, useWorker: false })
+        : (typeof confetti !== 'undefined' ? confetti : function () { /* confetti library failed to load - no-op */ });
 </script>
 </body>
 </html>
